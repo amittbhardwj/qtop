@@ -52,6 +52,30 @@ def test_sort_worker_nodes_rejects_custom_python_sorting(monkeypatch):
         cluster._sort_worker_nodes()
 
 
+@pytest.mark.parametrize("get_gecos", (False, True))
+@pytest.mark.parametrize(
+    "extract_info",
+    (
+        {"field_to_use": 5, "regex": None},
+        {"field_to_use": 5, "regex": None, "user_details_cache": "   ", "user_details_realtime": "   "},
+    ),
+)
+def test_get_detail_of_name_skips_missing_user_details_command(monkeypatch, get_gecos, extract_info):
+    import qtop_py.qtop as qtop
+
+    class Args(object):
+        GET_GECOS = get_gecos
+
+    def fail_popen(*args, **kwargs):
+        raise AssertionError("missing user details command should skip subprocess lookup")
+
+    monkeypatch.setattr(qtop, "args", Args(), raising=False)
+    monkeypatch.setattr(qtop, "config", {"extract_info": extract_info}, raising=False)
+    monkeypatch.setattr(qtop.subprocess, "Popen", fail_popen)
+
+    assert qtop.get_detail_of_name([("1", "2", "3", 4, "alice")]) == {}
+
+
 @pytest.mark.parametrize(
     "domain_name, match",
     (

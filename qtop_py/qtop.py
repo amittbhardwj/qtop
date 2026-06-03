@@ -374,11 +374,22 @@ def get_detail_of_name(account_jobs_table):
     regex = extract_info.get("regex", None)
 
     if args.GET_GECOS:
+        command_key = "user_details_realtime"
         users = " ".join([line[4] for line in account_jobs_table])
-        passwd_command = extract_info.get("user_details_realtime") % users
-        passwd_command = passwd_command.split()
+        passwd_command = extract_info.get(command_key)
     else:
-        passwd_command = extract_info.get("user_details_cache").split()
+        command_key = "user_details_cache"
+        passwd_command = extract_info.get(command_key)
+
+    if not passwd_command or not passwd_command.strip():
+        logging.warning("Missing %s in %s; skipping user details lookup." % (command_key, QTOPCONF_YAML))
+        return dict()
+
+    if args.GET_GECOS:
+        passwd_command = passwd_command % users
+
+    passwd_command = passwd_command.split()
+    if not args.GET_GECOS:
         passwd_command[-1] = os.path.expandvars(passwd_command[-1])
 
     try:
